@@ -33,7 +33,8 @@ def connectDatabase(row):
             )
             cur = conn.cursor()
             print("\n \n \n 111111111111111111111111111111111111111111111111111111111111111111111111")
-            create_sql = f"CREATE TABLE IF NOT EXISTS {DBTABLE} (cityId integer primary key, \
+            create_sql = f"CREATE TABLE IF NOT EXISTS {DBTABLE} (id serial primary key, \
+                cityId integer, \
                 cityName varchar, \
                 latitude float, \
                 longitude float, \
@@ -52,8 +53,6 @@ def connectDatabase(row):
                 _day integer \
             );"
 
-            cur.execute(create_sql)
-
             sql=f"INSERT INTO {DBTABLE} (cityId, cityName, latitude, longitude, countryName, temperature, \
                 maxTemp, minTemp, feelsLike, humidity, createdAt, year, \
                 _year, month, _month, day, _day) \
@@ -64,8 +63,8 @@ def connectDatabase(row):
                 row['humidity'], row['createdAt'], row['year'], row['_year'], \
                 row['month'], row['_month'], row['_day'], row['day'])
             
+            cur.execute(create_sql)
             cur.execute(sql, val)
-            print(cur)
             # return cur
             conn.commit()
             conn.close()
@@ -97,4 +96,5 @@ Stream.writeToDB(processed_response, connectDatabase)
 
 
 
-### writeRawToCSV
+### writeStreamToCSV
+Stream.writeToHDFS(processed_response)

@@ -3,6 +3,7 @@ from pyspark.sql.functions import (
     col,
     year, month, dayofmonth
 )
+import pyspark.sql.functions as func
 from utility import *
 
 new_col_names = {
@@ -37,6 +38,10 @@ class Stream():
         # raw_response.writeStream.format("console").option("truncate", "false").start().awaitTermination()
 
         processed_response = raw_response \
+            .withColumn("temp", func.round(col("temp"), 2)) \
+            .withColumn("max_temp", func.round(col("max_temp"), 2)) \
+            .withColumn("min_temp", func.round(col("min_temp"), 2)) \
+            .withColumn("feels_like", func.round(col("feels_like"), 2)) \
             .withColumn("_year", year(col("created_at"))) \
             .withColumn("year", year(col("created_at"))) \
             .withColumn("_month", month(col("created_at"))) \
@@ -57,12 +62,16 @@ class Stream():
         stream.writeStream.outputMode("update").foreach(connectDatabase).start().awaitTermination(1000)
         
                 
-    # def writeToHDFS(stream, path='', )
-
-
-#   def writeToDB(stream, path, format, topic, isPartition=False):
-# if isPartition is True:
-#             response = stream.writeStream \
-#                 .format(format) \
-#                 .partitionBy('_year', '_month') \
-#                 .option('header', True) \
+    def writeToHDFS(stream, path="hdfs://localhost:9001/pntloi/weather_streaming", format="csv", formatOption="append", outputMode="append", chkpointPath="hdfs://localhost:9001/pntloi/weather_streaming/checkpoint"):
+        csv_df = stream.writeStream \
+            .partitionBy("_year", "_month", "_day") \
+            .format(format) \
+            .option("format", formatOption) \
+            .trigger(processingTime="5 seconds")\
+            .option("path", path)\
+            .option("checkpointLocation", chkpointPath) \
+            .outputMode(outputMode) \
+            .start()
+        
+        csv_df.awaitTermination()
+            
